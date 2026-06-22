@@ -1,6 +1,6 @@
 import pygame
 import random
-from setup import setup_game, write_text, spawn_pipe
+from setup import setup_game, write_text, spawn_pipe, Bird
 
 # Pygame setup
 pygame.init()
@@ -13,7 +13,8 @@ running = True
 state = "menu"
 
 # Seting up the game
-velocity, bird, pipes, score, pipe_timer = setup_game()
+bird = Bird()
+pipes, score, pipe_timer = setup_game()
 record = 0
 
 # Fonts
@@ -29,9 +30,6 @@ background_image = pygame.transform.scale(background_image, (800, 600))
 # Game Over
 game_over_image = pygame.image.load("assets/gameO.jpg")
 game_over_image = pygame.transform.scale(game_over_image, (800, 600))
-# Bird
-bird_image = pygame.image.load("assets/bird.png")
-bird_image = pygame.transform.scale(bird_image, (125, 125))
 # Pipes
 pipe_image = pygame.image.load("assets/pip.png")
 
@@ -58,20 +56,16 @@ while running:
             (0, 0)
         )
 
-        screen.blit(
-            bird_image,
-            (bird.x - 25, bird.y - 50)
-        )
+        bird.draw(screen)
 
         # Gravity
-        velocity += 0.5
-        bird.y += velocity
+        bird.gravity()
 
         # Boundaries
-        if bird.top < 0:
-            bird.top = 0
-        elif bird.bottom > 600:
-            bird.bottom = 600
+        if bird.rect.top < 0:
+            bird.rect.top = 0
+        elif bird.rect.bottom > 600:
+            bird.rect.bottom = 600
             state = "game_over"
 
         # Pipe
@@ -96,13 +90,13 @@ while running:
                 pipe_image,
                 (pipe["bottom"].x - 20, pipe["bottom"].y - 625)
             )
-
+        
         # Collision
-            if bird.colliderect(pipe["bottom"]) or bird.colliderect(pipe["top"]):
+            if bird.collides_with(pipe["top"], pipe["bottom"]):
                 state = "game_over"
 
         # Score
-            if not pipe["counted"] and bird.x > pipe["top"].right:
+            if not pipe["counted"] and bird.rect.x > pipe["top"].right:
                 score += 1
                 pipe["counted"] = True
         
@@ -152,13 +146,13 @@ while running:
     for event in pygame.event.get():
         # Jump
         if (state == "playing" or state == "menu") and event.type == pygame.KEYDOWN and (event.key == pygame.K_SPACE or event.key == pygame.K_UP):
-            velocity = -9
+            bird.jump()
             state = "playing"
 
         # Restart
         if state == "game_over" and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
             screen.fill("black")
-            velocity, bird, pipes, score, pipe_timer = setup_game()
+            pipes, score, pipe_timer = setup_game()
             state = "playing"
             
         # Quit game

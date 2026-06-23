@@ -1,6 +1,6 @@
 import pygame
 import random
-from setup import setup_game, write_text, spawn_pipe, Bird
+from setup import setup_game, write_text, Bird, Pipes
 
 # Pygame setup
 pygame.init()
@@ -14,7 +14,9 @@ state = "menu"
 
 # Seting up the game
 bird = Bird()
-pipes, score, pipe_timer = setup_game()
+score = setup_game()
+pipes = Pipes(850, 150)
+pipes.spawn()
 record = 0
 
 # Fonts
@@ -30,13 +32,10 @@ background_image = pygame.transform.scale(background_image, (800, 600))
 # Game Over
 game_over_image = pygame.image.load("assets/gameO.jpg")
 game_over_image = pygame.transform.scale(game_over_image, (800, 600))
-# Pipes
-pipe_image = pygame.image.load("assets/pip.png")
 
 while running:
     # Fps is limited to 60
     clock.tick(60)
-    
 
     # menu state
     if state == "menu":
@@ -69,34 +68,27 @@ while running:
             state = "game_over"
 
         # Pipe
-        # Count time to spawn next pipe
-        pipe_timer += 1
+        # Spawn next pipe
+        if pipes.time_elapsed():
+            pipes.spawn()
 
         # Remove passed pipes
-        pipes = [p for p in pipes if p["top"].right >= 0]
+        pipes.remove_passed_pipes()
         
-        # Spawn
-        for pipe in pipes:
-            if pipe_timer >= 90:
-                spawn_pipe(pipes)
-                pipe_timer = 0
-
+        # For each pipe
+        for pipe in pipes.Pipes:
         # Movement
-            pipe["top"].x -= 5
-            pipe["bottom"].x -= 5
+            pipes.move(pipe)
 
         # Pipe image
-            screen.blit(
-                pipe_image,
-                (pipe["bottom"].x - 20, pipe["bottom"].y - 625)
-            )
+            pipes.draw(screen, pipe["bottom"].x, pipe["bottom"].y)
         
         # Collision
             if bird.collides_with(pipe["top"], pipe["bottom"]):
                 state = "game_over"
 
         # Score
-            if not pipe["counted"] and bird.rect.x > pipe["top"].right:
+            if bird.passed_by(pipe):
                 score += 1
                 pipe["counted"] = True
         
@@ -152,7 +144,7 @@ while running:
         # Restart
         if state == "game_over" and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
             screen.fill("black")
-            pipes, score, pipe_timer = setup_game()
+            score = setup_game()
             state = "playing"
             
         # Quit game
